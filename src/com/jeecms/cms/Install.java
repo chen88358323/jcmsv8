@@ -17,6 +17,8 @@ import org.apache.commons.lang.StringUtils;
 
 /**
  * 安装类
+ *
+ * 配置表 jc_config  jc_site
  */
 public class Install {
 	public static void dbXml(String fileName, String dbHost, String dbPort,

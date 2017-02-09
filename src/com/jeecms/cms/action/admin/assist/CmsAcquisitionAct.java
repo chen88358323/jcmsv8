@@ -135,6 +135,7 @@ public class CmsAcquisitionAct {
 		return list(request, model);
 	}
 
+	//开始采集
 	@RequiresPermissions("acquisition:o_start")
 	@RequestMapping("/acquisition/o_start.do")
 	public String start(Integer[] ids, HttpServletRequest request,

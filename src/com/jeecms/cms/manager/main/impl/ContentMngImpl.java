@@ -271,6 +271,9 @@ public class ContentMngImpl implements ContentMng, ChannelDeleteChecker {
 		return entity;
 	}
 
+	/***
+	 *
+	 * */
 	public Content save(Content bean, ContentExt ext, ContentTxt txt,
 			Integer[] channelIds, Integer[] topicIds, Integer[] viewGroupIds,
 			String[] tagArr, String[] attachmentPaths,
@@ -359,7 +362,8 @@ public class ContentMngImpl implements ContentMng, ChannelDeleteChecker {
 		//afterSave(bean);
 		return bean;
 	}
-	
+
+
 	private Content saveContent(Content bean, ContentExt ext, ContentTxt txt,
 			Integer channelId,Integer typeId, Boolean draft,
 			Boolean contribute,CmsUser user, boolean forMember){
@@ -394,10 +398,13 @@ public class ContentMngImpl implements ContentMng, ChannelDeleteChecker {
 		// 执行监听器
 		preSave(bean);
 		dao.save(bean);
+		//title 等额外信息
 		contentExtMng.save(ext, bean);
+		//文本内容 会不会xss?
 		contentTxtMng.save(txt, bean);
 		ContentCheck check = new ContentCheck();
 		check.setCheckStep(userStep);
+		//审核
 		contentCheckMng.save(check, bean);
 		contentCountMng.save(new ContentCount(), bean);
 		return bean;

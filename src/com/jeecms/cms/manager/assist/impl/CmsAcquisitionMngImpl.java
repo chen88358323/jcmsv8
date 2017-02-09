@@ -3,6 +3,8 @@ package com.jeecms.cms.manager.assist.impl;
 import java.util.Date;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ import com.jeecms.core.manager.CmsUserMng;
 @Transactional
 public class CmsAcquisitionMngImpl implements CmsAcquisitionMng,
 		ChannelDeleteChecker {
+	private Logger l = LoggerFactory.getLogger(CmsAcquisitionMngImpl.class);
 	@Transactional(readOnly = true)
 	public List<CmsAcquisition> getList(Integer siteId) {
 		return dao.getList(siteId);
@@ -161,7 +164,9 @@ public class CmsAcquisitionMngImpl implements CmsAcquisitionMng,
 			String author,String description,Date releaseDate,Integer acquId,
 			AcquisitionResultType resultType, CmsAcquisitionTemp temp,
 			CmsAcquisitionHistory history) {
+
 		CmsAcquisition acqu = findById(acquId);
+		l.error("CmsAcquisition:"+acqu.toString());
 		Content c = new Content();
 		c.setSite(acqu.getSite());
 		c.setModel(modelMng.getDefModel());
@@ -174,6 +179,9 @@ public class CmsAcquisitionMngImpl implements CmsAcquisitionMng,
 		cext.setTitle(title);
 		cext.setDescription(description);
 		ctxt.setTxt(txt);
+		l.error("c" + c.toString());
+		l.error("cext"+cext.toString());
+		l.error("ctxt"+ctxt.toString());
 		Content content = contentMng.save(c, cext, ctxt,null, null, null, null,
 				null, null, null, null, null,  acqu.getChannel().getId(),
 				acqu.getType().getId(), false,false,

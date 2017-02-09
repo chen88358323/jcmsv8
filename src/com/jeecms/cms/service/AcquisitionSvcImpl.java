@@ -181,6 +181,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 			String linkStart=acqu.getLinkStart();
 			String linkEnd=acqu.getLinkEnd();
 			List<String> list = new ArrayList<String>();
+			log.info("****url:"+url);
 			try {
 				HttpGet httpget = new HttpGet(new URI(url));
 				String base = url.substring(0, url.indexOf("/", url

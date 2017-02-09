@@ -507,7 +507,7 @@ public class ContentAct{
 		return "content/edit";
 	}
 
-
+	//保存文章
 	@RequiresPermissions("content:o_save")
 	@RequestMapping("/content/o_save.do")
 	public String save(Content bean, ContentExt ext, ContentTxt txt,
