@@ -16,6 +16,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.jeecms.common.file.FileNameUtils;
@@ -31,6 +33,7 @@ import com.jeecms.core.manager.DbFileMng;
  * @author Tom
  */
 public class ImageSvcImpl implements ImageSvc {
+	private Logger l = LoggerFactory.getLogger(ImageSvcImpl.class);
 	public String crawlImg(String imgUrl,CmsSite  site) {
 		HttpClientBuilder httpClientBuilder = HttpClientBuilder.create();  
 	    CloseableHttpClient client = httpClientBuilder.build();  
@@ -134,10 +137,13 @@ public class ImageSvcImpl implements ImageSvc {
 				}
 			}
 		}catch (Exception e) {
+
 		}finally {
 			try {
-				client.close();
+				if(client!=null)
+					client.close();
 			} catch (IOException e) {
+				l.error(e.getMessage());
 				e.printStackTrace();
 			}
        }

@@ -112,5 +112,11 @@ public class CmsModel extends BaseCmsModel {
 	}
 
 	/* [CONSTRUCTOR MARKER END] */
+	@Override
+	public String toString(){
+		return  "CmsModel{id:"+getId()+"|name:"+getName()+
+				"|path:"+getPath()+
+				"}";
+	}
 
 }

@@ -3,6 +3,10 @@ package com.jeecms.cms.manager.assist.impl;
 import java.util.Date;
 import java.util.List;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.jeecms.common.util.HibernateProxyTypeAdapter;
+import net.sf.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -164,9 +168,11 @@ public class CmsAcquisitionMngImpl implements CmsAcquisitionMng,
 			String author,String description,Date releaseDate,Integer acquId,
 			AcquisitionResultType resultType, CmsAcquisitionTemp temp,
 			CmsAcquisitionHistory history) {
-
+//		GsonBuilder b = new GsonBuilder();
+//		b.registerTypeAdapterFactory(HibernateProxyTypeAdapter.FACTORY);
+//		Gson gson=b.create();
 		CmsAcquisition acqu = findById(acquId);
-		l.error("CmsAcquisition:"+acqu.toString());
+		l.error("CmsAcquisition:" +acqu.toString());
 		Content c = new Content();
 		c.setSite(acqu.getSite());
 		c.setModel(modelMng.getDefModel());
@@ -179,9 +185,9 @@ public class CmsAcquisitionMngImpl implements CmsAcquisitionMng,
 		cext.setTitle(title);
 		cext.setDescription(description);
 		ctxt.setTxt(txt);
-		l.error("c" + c.toString());
-		l.error("cext"+cext.toString());
-		l.error("ctxt"+ctxt.toString());
+		l.error("c===>" + c.toString());
+		l.error("cext===>"+cext.toString());
+		l.error("ctxt===>"+ctxt.toString() );
 		Content content = contentMng.save(c, cext, ctxt,null, null, null, null,
 				null, null, null, null, null,  acqu.getChannel().getId(),
 				acqu.getType().getId(), false,false,

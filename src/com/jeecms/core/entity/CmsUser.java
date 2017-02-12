@@ -650,4 +650,17 @@ public class CmsUser extends BaseCmsUser implements PriorityInterface {
 
 	/* [CONSTRUCTOR MARKER END] */
 
+	@Override
+	public String toString() {
+		return "cmsuser{id:" +getId()+
+				"|group:" +getGroup().toString()+
+				"|username:" +getUsername()+
+				"|registerTime:" +getRegisterTime()+
+				"|registerIp:" +getRegisterIp()+"|loginCount:" +getLoginCount()+
+				"|rank:" +getRank()+"|uploadTotal:" +getUploadTotal()+
+				"|uploadSize:" +getUploadSize()+"|admin:" +getAdmin()+
+				"|selfAdmin:" +getSelfAdmin()+
+				"|disabled:" +getDisabled()+
+				"}";
+	}
 }

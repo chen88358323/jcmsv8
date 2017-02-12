@@ -585,7 +585,19 @@ public class CmsSite extends BaseCmsSite {
 			relativePath,
 			resycleOn);
 	}
-
+	@Override
+	public String toString(){
+		return  "CmsSite{id:"+getId()+
+				"|domain:"+getDomain()+"|path:"+getPath()+
+				"|name:"+getName()+"|protocol:"+getProtocol()+
+				"|dynamicSuffix:"+getDynamicSuffix()+"|staticSuffix:"+getStaticSuffix()+
+				"|indexToRoot:"+getIndexToRoot()+"|staticIndex:"+getStaticIndex()+
+				"|localeAdmin:"+getLocaleAdmin()+"|localeFront:"+getLocaleFront()+
+				"|tplSolution:"+getTplSolution()+"|finalStep:"+getFinalStep()+
+				"|afterCheck:"+getAfterCheck()+"|relativePath:"+getRelativePath()+
+				"|resycleOn:"+getResycleOn()+"|config:"+getConfig().toString()+
+				"}";
+	}
 	/* [CONSTRUCTOR MARKER END] */
 
 }

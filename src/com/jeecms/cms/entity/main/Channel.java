@@ -1253,7 +1253,14 @@ public class Channel extends BaseChannel implements HibernateTree<Integer>,
 
 		super(id, site, model, lft, rgt, priority, hasContent, display);
 	}
-
+	@Override
+	public String toString(){
+		return  "Channel{id:"+getId()+"|site:"+getSite().toString()+
+		"|model:"+getModel().toString()+"|lft:"+getLft()+
+				"|rgt:"+getRgt()+"|priority:"+getPriority()+
+				"|hasContent:"+getHasContent()+"|display:"+getDisplay()+
+				"}";
+	}
 	/* [CONSTRUCTOR MARKER END] */
 
 }

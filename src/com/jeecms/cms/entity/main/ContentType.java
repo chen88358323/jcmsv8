@@ -32,7 +32,13 @@ public class ContentType extends BaseContentType {
 			hasImage,
 			disabled);
 	}
-
+	@Override
+	public String toString(){
+		return  "ContentType{id:"+getId()+"|name:"+getName()+
+		"|hasImage:"+getHasImage()+
+				"|disabled:"+getDisabled()
+				+"}";
+	}
 	/* [CONSTRUCTOR MARKER END] */
 
 }

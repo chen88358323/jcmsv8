@@ -121,5 +121,9 @@ public class ContentTxt extends BaseContentTxt {
 	}
 
 	/* [CONSTRUCTOR MARKER END] */
-
+	@Override
+	public String toString() {
+		return "ContentTxt{id:" + getId() + "|txt:" + getTxt() +
+				"}";
+	}
 }

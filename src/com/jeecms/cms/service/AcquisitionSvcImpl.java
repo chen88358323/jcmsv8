@@ -173,7 +173,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 			AcquisitionSvcImpl.this.end(acqu);
 			log.info("Acquisition#{} complete", acqu.getId());
 		}
-
+//获取内容链接集合
 		private List<String> getContentList(HttpClient client,
 				CharsetHandler handler, String url, CmsAcquisition acqu) {
 			String linksetStart=acqu.getLinksetStart();
@@ -250,7 +250,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 			try {
 				int start, end;
 				HttpGet httpget = new HttpGet(new URI(url));
-				String html = client.execute(httpget, handler);
+				String html = client.execute(httpget, handler);//获取文章内容
 				start = html.indexOf(titleStart);
 				if (start == -1) {
 					return handerResult(temp, history, null,
@@ -263,11 +263,11 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 							AcquisitionResultType.TITLEENDNOTFOUND);
 				}
 				String title = html.substring(start, end);
-				if (cmsAcquisitionHistoryMng
-						.checkExistByProperties(true, title)) {
-					return handerResult(temp, history, title,
-							AcquisitionResultType.TITLEEXIST, true);
-				}
+//				if (cmsAcquisitionHistoryMng
+//						.checkExistByProperties(true, title)) {
+//					return handerResult(temp, history, title,
+//							AcquisitionResultType.TITLEEXIST, true);
+//				}
 				start = html.indexOf(contentStart);
 				if (start == -1) {
 					return handerResult(temp, history, title,
@@ -290,6 +290,8 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 						}else{
 							imgRealUrl=img;
 						}
+
+						//下载图片并替换路径
 						String imageUrl=imgSvc.crawlImg(imgRealUrl, config.getContextPath(), config.getUploadToDb(), config.getDbFileUri(), ftp, site.getUploadPath());
 						txt=txt.replace(img, imageUrl);
 					}

@@ -108,5 +108,11 @@ public class ContentExt extends BaseContentExt {
 	}
 
 	/* [CONSTRUCTOR MARKER END] */
-
+	@Override
+	public String toString() {
+		return "ContentExt{id:" + getId() + "|title:" + getTitle() +
+				"|releaseDate:" + getReleaseDate() + "|bold:" + getBold() +
+				"|needRegenerate:" + getNeedRegenerate() +
+				  "}";
+	}
 }

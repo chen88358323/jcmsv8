@@ -165,7 +165,18 @@ public class CmsGroup extends BaseCmsGroup implements PriorityInterface {
 			needCheck,
 			regDef);
 	}
-
+	@Override
+	public String toString() {
+		return "CmsGroup{id:" +getId()+
+				"|name:" +getName()+
+				"|priority"+getPriority()+
+				"|allowPerDay"+getAllowPerDay()+
+				"|allowMaxFile"+getAllowMaxFile()+
+				"|needCaptcha"+getNeedCaptcha()+
+				"|needCheck"+getNeedCheck()+
+				"|regDef"+getRegDef()+
+				"}";
+	}
 	/* [CONSTRUCTOR MARKER END] */
 
 }

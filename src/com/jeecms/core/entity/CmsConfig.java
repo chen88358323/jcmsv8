@@ -192,7 +192,19 @@ public class CmsConfig extends BaseCmsConfig {
 		super(id, dbFileUri, uploadToDb, defImg, loginUrl, countClearTime,
 				countCopyTime, downloadCode, downloadTime);
 	}
-
+	@Override
+	public String toString(){
+		return  "CmsConfig{id:"+getId()+
+				"|dbFileUri:"+getDbFileUri()+
+				"|uploadToDb:"+getUploadToDb()+
+				"|defImg:"+getDefImg()+
+				"|loginUrl:"+getLoginUrl()+
+				"|countClearTime:"+getCountClearTime()+
+				"|countCopyTime:"+getCountCopyTime()+
+				"|downloadCode:"+getDownloadCode()+
+				"|downloadTime:"+getDownloadTime()+
+				"}";
+	}
 	/* [CONSTRUCTOR MARKER END] */
 
 }

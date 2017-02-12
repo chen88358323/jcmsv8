@@ -31,6 +31,7 @@ public class CmsAcquisition extends BaseCmsAcquisition {
 		NONE, TITLE, URL
 	}
 
+
 	/**
 	 * 是否停止
 	 * 
@@ -140,7 +141,17 @@ public class CmsAcquisition extends BaseCmsAcquisition {
 	public CmsAcquisition (java.lang.Integer id) {
 		super(id);
 	}
-
+	@Override
+	public String toString(){
+		return  "CmsAcquisition{id:"+getId()+"|name:"+getName()+
+				"|status:"+getId()+"|currNum:"+getName()+
+				"|totalItem:"+getId()+"|currItem:"+getName()+
+				"|pauseTime:"+getId()+"|pageEncoding:"+getName()+
+				"|queue:"+getId() +
+				"|user:"+getUser().toString()+"|type:"+getType().toString()+
+				"|site:"+getSite().toString()+"|channel:" +getChannel().toString()+
+				"}";
+	}
 	/**
 	 * Constructor for required fields
 	 */

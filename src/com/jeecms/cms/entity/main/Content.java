@@ -1862,4 +1862,15 @@ public class Content extends BaseContent implements ContentInterface {
 
 	/* [CONSTRUCTOR MARKER END] */
 
+	@Override
+	public String toString(){
+		return  "Content{id:"+getId()+"|site:"+getSite().toString()+
+				"|sortDate:"+getSortDate()+"|topLevel:"+getTopLevel()+
+				"|hasTitleImg:"+getHasTitleImg()+"|recommend:"+getRecommend()+
+				"|status:"+getStatus()+"|viewsDay:"+getViewDay()+
+				"|commentsDay:"+getCommentsDay()+"|downloadsDay:"+getDownloadsDay()+
+				"|upsDay:"+getUpsDay()+
+				"}";
+	}
+
 }
