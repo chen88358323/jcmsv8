@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.jeecms.plug.spider.BlogSpider;
+import com.jeecms.plug.spider.bean.CsdnBlog;
+import com.jeecms.plug.spider.processor.CsdnBlogPageProcessor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -42,6 +45,7 @@ import com.jeecms.core.entity.Ftp;
 import com.jeecms.core.manager.CmsConfigMng;
 import com.jeecms.core.manager.CmsSiteMng;
 import com.jeecms.core.manager.FtpMng;
+import us.codecraft.webmagic.Spider;
 
 @Service
 public class AcquisitionSvcImpl implements AcquisitionSvc {
@@ -52,11 +56,29 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 		if (acqu == null || acqu.getStatus() == CmsAcquisition.START) {
 			return false;
 		}
-		Thread thread = new AcquisitionThread(acqu);
+		Thread thread;
+		//判断是否属于技术博客
+		if(checkTechBlog(acqu)){
+			thread = new AcquisitionTechBlogThread(acqu);
+		}else{
+			thread = new AcquisitionThread(acqu);
+		}
+
 		thread.start();
 		return true;
 	}
-	
+
+	//判断是否属于技术博客
+	private boolean checkTechBlog(CmsAcquisition acqu ){
+		if(acqu!=null){
+			String[] plans = acqu.getAllPlans();
+			if(plans!=null&&plans.length>0){
+				log.info("plans====>"+plans[0]);
+				return  plans[0].contains("csdn.net");
+			}
+		}
+		return false;
+	}
 	private void end(CmsAcquisition acqu){
 		Integer siteId = acqu.getSite().getId();
 		cmsAcquisitionMng.end(acqu.getId());
@@ -66,9 +88,11 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 			start(id);
 		}
 	}
-
+	@Autowired
 	private CmsAcquisitionMng cmsAcquisitionMng;
+	@Autowired
 	private CmsAcquisitionHistoryMng cmsAcquisitionHistoryMng;
+	@Autowired
 	private CmsAcquisitionTempMng cmsAcquisitionTempMng;
 	@Autowired
 	private CmsSiteMng siteMng;
@@ -80,6 +104,9 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 	private ContentCountMng contentCountMng;
 	@Autowired
 	private FtpMng ftpMng;
+
+	@Autowired
+	private BlogSpider blogSpider;
 
 	@Autowired
 	public void setCmsAcquisitionMng(CmsAcquisitionMng cmsAcquisitionMng) {
@@ -98,6 +125,312 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 		this.cmsAcquisitionTempMng = cmsAcquisitionTempMng;
 	}
 
+
+
+
+	private class AcquisitionTechBlogThread extends  Thread{
+
+		private CmsAcquisition acqu;
+
+		public AcquisitionTechBlogThread(CmsAcquisition acqu) {
+			super(acqu.getClass().getName() + "#" + acqu.getId());
+			this.acqu = acqu;
+		}
+		@Override
+		public void run() {
+			if (acqu == null) {
+				return;
+			}
+			acqu = cmsAcquisitionMng.start(acqu.getId());
+			//查两边有什么不一样么？
+			CmsSite site=acqu.getSite();
+			site=siteMng.findById(site.getId());
+			CmsConfig config=cmsConfigMng.get();
+			Ftp ftp=null;
+			if(site.getUploadFtp()!=null){
+				Integer ftpId=site.getUploadFtp().getId();
+				ftp=ftpMng.findById(ftpId);
+			}
+
+			String[] plans = acqu.getAllPlans();
+
+			String url;
+			int currNum = acqu.getCurrNum();
+			int currItem = acqu.getCurrItem();
+			Integer acquId = acqu.getId();
+
+			for (int i = plans.length - currNum; i >= 0; i--) {
+				url = plans[i];
+				CsdnBlogPageProcessor processor= new CsdnBlogPageProcessor();
+				Spider spider=Spider.create(processor);
+				spider.addUrl(url).thread(5).run();
+				//todo 会不会未完成返回
+				List<CsdnBlog> contentList=processor.getCblist();
+				if(contentList==null||contentList.size()==0)
+					continue;
+				//获取博主 博客链接
+//				contentList = null;//getContentList(client, handler, url, acqu);
+				String link;
+				for (int j = contentList.size() - currItem; j >= 0; j--) {
+
+					//校验关闭或者sleep一定时间
+					if (cmsAcquisitionMng.isNeedBreak(acqu.getId(),
+							plans.length - i, contentList.size() - j,
+							contentList.size())) {
+							//关闭爬虫
+						spider.stop();
+						log.info("Acquisition#{} breaked", acqu.getId());
+						return;
+					}
+					if (acqu.getPauseTime() > 0) {
+						try {
+							Thread.sleep(acqu.getPauseTime());
+						} catch (InterruptedException e) {
+							log.warn(null, e);
+						}
+					}
+
+					CsdnBlog b = contentList.get(j);
+
+					CmsAcquisitionTemp temp = AcquisitionSvcImpl.this.newTemp(
+							url, b.getUrl(), contentList.size() - j,
+							(float) (contentList.size() - j),
+							(float) contentList.size(),
+							acqu.getSite());
+
+					CmsAcquisitionHistory history = AcquisitionSvcImpl.this
+							.newHistory(url, b.getUrl(), acqu);
+
+
+
+					saveContent(config,site,acquId, b.getUrl(),ftp,temp,
+							history);
+				}
+				currItem = 1;
+			}
+			AcquisitionSvcImpl.this.end(acqu);
+			log.info("Acquisition#{} complete", acqu.getId());
+		}
+		private Content handerResult(CmsAcquisitionTemp temp,
+									 CmsAcquisitionHistory history, String title,
+									 AcquisitionResultType errorType) {
+			return handerResult(temp, history, title, errorType, false);
+		}
+
+		private Content handerResult(CmsAcquisitionTemp temp,
+									 CmsAcquisitionHistory history, String title,
+									 AcquisitionResultType errorType, Boolean repeat) {
+			temp.setDescription(errorType.name());
+			temp.setTitle(title);
+			cmsAcquisitionTempMng.save(temp);
+			if (!repeat) {
+				history.setTitle(title);
+				history.setDescription(errorType.name());
+				cmsAcquisitionHistoryMng.save(history);
+			}
+			return null;
+		}
+		private Content saveContent( CmsConfig config,
+									CmsSite site,Integer acquId, String url,Ftp ftp, CmsAcquisitionTemp temp, CmsAcquisitionHistory history) {
+			CmsAcquisition acqu = cmsAcquisitionMng.findById(acquId);
+			String titleStart=acqu.getTitleStart();
+			String titleEnd=acqu.getTitleEnd();
+			String contentStart=acqu.getContentStart();
+			String contentEnd=acqu.getContentEnd();
+			String viewStart=acqu.getViewStart();
+			String viewEnd=acqu.getViewEnd();
+			String viewIdStart=acqu.getViewIdStart();
+			String viewIdEnd=acqu.getViewIdEnd();
+			String viewLink=acqu.getViewLink();
+			String authorStart=acqu.getAuthorStart();
+			String authorEnd=acqu.getAuthorEnd();
+			String originStart=acqu.getOriginStart();
+			String originEnd=acqu.getOriginEnd();
+			String originAppoint=acqu.getOriginAppoint();
+			String releaseTimeStart=acqu.getReleaseTimeStart();
+			String releaseTimeEnd=acqu.getReleaseTimeEnd();
+			String descriptionStart=acqu.getDescriptionStart();
+			String descriptionEnd=acqu.getDescriptionEnd();
+			history.setAcquisition(acqu);
+			try {
+
+				HttpGet httpget = new HttpGet(new URI(url));
+				int start, end;
+				String html = null;//获取文章内容
+				start = html.indexOf(titleStart);
+				if (start == -1) {
+					return handerResult(temp, history, null,
+							AcquisitionResultType.TITLESTARTNOTFOUND);
+				}
+				start += titleStart.length();
+				end = html.indexOf(titleEnd, start);
+				if (end == -1) {
+					return handerResult(temp, history, null,
+							AcquisitionResultType.TITLEENDNOTFOUND);
+				}
+				String title = html.substring(start, end);
+//				if (cmsAcquisitionHistoryMng
+//						.checkExistByProperties(true, title)) {
+//					return handerResult(temp, history, title,
+//							AcquisitionResultType.TITLEEXIST, true);
+//				}
+				start = html.indexOf(contentStart);
+				if (start == -1) {
+					return handerResult(temp, history, title,
+							AcquisitionResultType.CONTENTSTARTNOTFOUND);
+				}
+				start += contentStart.length();
+				end = html.indexOf(contentEnd, start);
+				if (end == -1) {
+					return handerResult(temp, history, title,
+							AcquisitionResultType.CONTENTENDNOTFOUND);
+				}
+				String txt = html.substring(start, end);
+
+				if(acqu.getImgAcqu()){
+					List<String>imgUrls=ImageUtils.getImageSrc(txt);
+					for(String img:imgUrls){
+						String imgRealUrl;
+						if(StringUtils.isNotBlank(acqu.getImgPrefix())){
+							imgRealUrl=acqu.getImgPrefix()+img;
+						}else{
+							imgRealUrl=img;
+						}
+
+						//下载图片并替换路径
+						String imageUrl=imgSvc.crawlImg(imgRealUrl, config.getContextPath(), config.getUploadToDb(), config.getDbFileUri(), ftp, site.getUploadPath());
+						txt=txt.replace(img, imageUrl);
+					}
+				}
+
+				String author = null;
+				if(StringUtils.isNotBlank(authorStart)){
+					start = html.indexOf(authorStart);
+					if (start == -1) {
+						return handerResult(temp, history, null,
+								AcquisitionResultType.AUTHORSTARTNOTFOUND);
+					}
+					start += authorStart.length();
+					end = html.indexOf(authorEnd, start);
+					if (end == -1) {
+						return handerResult(temp, history, null,
+								AcquisitionResultType.AUTHORENDNOTFOUND);
+					}
+					author = html.substring(start, end);
+				}
+
+				String origin = null;
+				if(StringUtils.isNotBlank(originAppoint)){
+					origin=originAppoint;
+				}else{
+					if(StringUtils.isNotBlank(originStart)){
+						start = html.indexOf(originStart);
+						if (start == -1) {
+							return handerResult(temp, history, null,
+									AcquisitionResultType.ORIGINSTARTNOTFOUND);
+						}
+						start += originStart.length();
+						end = html.indexOf(originEnd, start);
+						if (end == -1) {
+							return handerResult(temp, history, null,
+									AcquisitionResultType.ORIGINENDNOTFOUND);
+						}
+						origin = html.substring(start, end);
+					}
+				}
+
+				String description = null;
+				if(StringUtils.isNotBlank(descriptionStart)){
+					start = html.indexOf(descriptionStart);
+					if (start == -1) {
+						return handerResult(temp, history, null,
+								AcquisitionResultType.DESCRISTARTNOTFOUND);
+					}
+					start += descriptionStart.length();
+					end = html.indexOf(descriptionEnd, start);
+					if (end == -1) {
+						return handerResult(temp, history, null,
+								AcquisitionResultType.DESCRIENDNOTFOUND);
+					}
+					description = html.substring(start, end);
+				}
+
+				Date releaseTime = null;
+				if(StringUtils.isNotBlank(releaseTimeStart)){
+					start = html.indexOf(releaseTimeStart);
+					if (start == -1) {
+						return handerResult(temp, history, null,
+								AcquisitionResultType.RELEASESTARTNOTFOUND);
+					}
+					start += releaseTimeStart.length();
+					end = html.indexOf(releaseTimeEnd, start);
+					if (end == -1) {
+						return handerResult(temp, history, null,
+								AcquisitionResultType.RELEASEENDNOTFOUND);
+					}
+					String releaseDate= html.substring(start, end);
+					SimpleDateFormat df=new SimpleDateFormat(acqu.getReleaseTimeFormat());
+					releaseTime=df.parse(releaseDate);
+				}
+
+
+				String view = null;
+//				if(StringUtils.isNotBlank(viewLink)){
+//					start = html.indexOf(viewIdStart);
+//					if (start == -1) {
+//						return handerResult(temp, history, null,
+//								AcquisitionResultType.VIEWIDSTARTNOTFOUND);
+//					}
+//					start += viewIdStart.length();
+//					end = html.indexOf(viewIdEnd, start);
+//					if (end == -1) {
+//						return handerResult(temp, history, null,
+//								AcquisitionResultType.VIEWIDENDNOTFOUND);
+//					}
+//					viewLink+=html.substring(start, end);
+//					HttpGet viewHttpGet = new HttpGet(new URI(viewLink));
+//					html = client.execute(viewHttpGet, handler);
+//				}
+				if(StringUtils.isNotBlank(viewStart)){
+					start = html.indexOf(viewStart);
+					if (start == -1) {
+						return handerResult(temp, history, null,
+								AcquisitionResultType.VIEWSTARTNOTFOUND);
+					}
+					start += viewStart.length();
+					end = html.indexOf(viewEnd, start);
+					if (end == -1) {
+						return handerResult(temp, history, null,
+								AcquisitionResultType.VIEWENDNOTFOUND);
+					}
+					view = html.substring(start, end);
+				}
+
+				Content content = cmsAcquisitionMng.saveContent(title, txt,origin,author,description,releaseTime,
+						acquId, AcquisitionResultType.SUCCESS, temp, history);
+				if(StringUtils.isNotBlank(view)){
+					ContentCount count=content.getContentCount();
+					int c=Integer.parseInt(view);
+					//采集访问一次需减一
+					if(StringUtils.isNotBlank(viewLink)){
+						c=c-1;
+					}
+					count.setViews(c);
+					contentCountMng.update(count);
+				}
+				cmsAcquisitionTempMng.save(temp);
+				cmsAcquisitionHistoryMng.save(history);
+				return content;
+			} catch (Exception e) {
+				e.printStackTrace();
+				log.warn(null, e);
+				return handerResult(temp, history, null,
+						AcquisitionResultType.UNKNOW);
+			}
+		}
+
+	}
+	//采集线程
 	private class AcquisitionThread extends Thread {
 		private CmsAcquisition acqu;
 
@@ -173,7 +506,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 			AcquisitionSvcImpl.this.end(acqu);
 			log.info("Acquisition#{} complete", acqu.getId());
 		}
-//获取内容链接集合
+		//获取内容链接集合
 		private List<String> getContentList(HttpClient client,
 				CharsetHandler handler, String url, CmsAcquisition acqu) {
 			String linksetStart=acqu.getLinksetStart();
@@ -248,8 +581,9 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 			String descriptionEnd=acqu.getDescriptionEnd();
 			history.setAcquisition(acqu);
 			try {
-				int start, end;
+
 				HttpGet httpget = new HttpGet(new URI(url));
+				int start, end;
 				String html = client.execute(httpget, handler);//获取文章内容
 				start = html.indexOf(titleStart);
 				if (start == -1) {
@@ -296,7 +630,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 						txt=txt.replace(img, imageUrl);
 					}
 				}
-				
+
 				String author = null;
 				if(StringUtils.isNotBlank(authorStart)){
 					start = html.indexOf(authorStart);
@@ -312,7 +646,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 					}
 					author = html.substring(start, end);
 				}
-				
+
 				String origin = null;
 				if(StringUtils.isNotBlank(originAppoint)){
 					origin=originAppoint;
@@ -332,7 +666,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 						origin = html.substring(start, end);
 					}
 				}
-				
+
 				String description = null;
 				if(StringUtils.isNotBlank(descriptionStart)){
 					start = html.indexOf(descriptionStart);
@@ -348,7 +682,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 					}
 					description = html.substring(start, end);
 				}
-				
+
 				Date releaseTime = null;
 				if(StringUtils.isNotBlank(releaseTimeStart)){
 					start = html.indexOf(releaseTimeStart);
@@ -399,7 +733,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 					}
 					view = html.substring(start, end);
 				}
-				
+
 				Content content = cmsAcquisitionMng.saveContent(title, txt,origin,author,description,releaseTime,
 						acquId, AcquisitionResultType.SUCCESS, temp, history);
 				if(StringUtils.isNotBlank(view)){
@@ -477,7 +811,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 		}
 
 		public String handleResponse(HttpResponse response)
-				throws ClientProtocolException, IOException {
+				throws  IOException {
 			StatusLine statusLine = response.getStatusLine();
 			if (statusLine.getStatusCode() >= 300) {
 				throw new HttpResponseException(statusLine.getStatusCode(),

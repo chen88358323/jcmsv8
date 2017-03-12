@@ -70,7 +70,10 @@ public class CmsAcquisition extends BaseCmsAcquisition {
 			return new String[0];
 		}
 	}
-
+/***
+ * 动态路径存在优先使用
+ * 无动态路径，则使用静态指定路径
+ * **/
 	public String[] getAllPlans() {
 		String[] plans = getPlans();
 		Integer start = getDynamicStart();
