@@ -8,14 +8,12 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import com.jeecms.plug.spider.BlogSpider;
 import com.jeecms.plug.spider.bean.CsdnBlog;
 import com.jeecms.plug.spider.processor.CsdnBlogPageProcessor;
 import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
@@ -105,8 +103,8 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 	@Autowired
 	private FtpMng ftpMng;
 
-	@Autowired
-	private BlogSpider blogSpider;
+//	@Autowired
+//	private BlogSpider blogSpider;
 
 	@Autowired
 	public void setCmsAcquisitionMng(CmsAcquisitionMng cmsAcquisitionMng) {
@@ -161,7 +159,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 
 			for (int i = plans.length - currNum; i >= 0; i--) {
 				url = plans[i];
-				CsdnBlogPageProcessor processor= new CsdnBlogPageProcessor();
+				CsdnBlogPageProcessor processor= new CsdnBlogPageProcessor(acqu.getAuthorStart());
 				Spider spider=Spider.create(processor);
 				spider.addUrl(url).thread(5).run();
 				//todo 会不会未完成返回
@@ -203,7 +201,7 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 
 
 
-					saveContent(config,site,acquId, b.getUrl(),ftp,temp,
+					saveContent(config,site,acquId, b,ftp,temp,
 							history);
 				}
 				currItem = 1;
@@ -231,64 +229,26 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 			return null;
 		}
 		private Content saveContent( CmsConfig config,
-									CmsSite site,Integer acquId, String url,Ftp ftp, CmsAcquisitionTemp temp, CmsAcquisitionHistory history) {
+									CmsSite site,Integer acquId, CsdnBlog b,
+									 Ftp ftp, CmsAcquisitionTemp temp,
+									 CmsAcquisitionHistory history) {
 			CmsAcquisition acqu = cmsAcquisitionMng.findById(acquId);
-			String titleStart=acqu.getTitleStart();
-			String titleEnd=acqu.getTitleEnd();
-			String contentStart=acqu.getContentStart();
-			String contentEnd=acqu.getContentEnd();
-			String viewStart=acqu.getViewStart();
-			String viewEnd=acqu.getViewEnd();
-			String viewIdStart=acqu.getViewIdStart();
-			String viewIdEnd=acqu.getViewIdEnd();
-			String viewLink=acqu.getViewLink();
-			String authorStart=acqu.getAuthorStart();
-			String authorEnd=acqu.getAuthorEnd();
-			String originStart=acqu.getOriginStart();
-			String originEnd=acqu.getOriginEnd();
-			String originAppoint=acqu.getOriginAppoint();
 			String releaseTimeStart=acqu.getReleaseTimeStart();
 			String releaseTimeEnd=acqu.getReleaseTimeEnd();
-			String descriptionStart=acqu.getDescriptionStart();
-			String descriptionEnd=acqu.getDescriptionEnd();
 			history.setAcquisition(acqu);
 			try {
 
-				HttpGet httpget = new HttpGet(new URI(url));
 				int start, end;
-				String html = null;//获取文章内容
-				start = html.indexOf(titleStart);
-				if (start == -1) {
-					return handerResult(temp, history, null,
-							AcquisitionResultType.TITLESTARTNOTFOUND);
-				}
-				start += titleStart.length();
-				end = html.indexOf(titleEnd, start);
-				if (end == -1) {
-					return handerResult(temp, history, null,
-							AcquisitionResultType.TITLEENDNOTFOUND);
-				}
-				String title = html.substring(start, end);
+				String html = b.getContent();//获取文章内容
+				String title = b.getTitle();
 //				if (cmsAcquisitionHistoryMng
 //						.checkExistByProperties(true, title)) {
 //					return handerResult(temp, history, title,
 //							AcquisitionResultType.TITLEEXIST, true);
 //				}
-				start = html.indexOf(contentStart);
-				if (start == -1) {
-					return handerResult(temp, history, title,
-							AcquisitionResultType.CONTENTSTARTNOTFOUND);
-				}
-				start += contentStart.length();
-				end = html.indexOf(contentEnd, start);
-				if (end == -1) {
-					return handerResult(temp, history, title,
-							AcquisitionResultType.CONTENTENDNOTFOUND);
-				}
-				String txt = html.substring(start, end);
 
 				if(acqu.getImgAcqu()){
-					List<String>imgUrls=ImageUtils.getImageSrc(txt);
+					List<String>imgUrls=ImageUtils.getImageSrc(html);
 					for(String img:imgUrls){
 						String imgRealUrl;
 						if(StringUtils.isNotBlank(acqu.getImgPrefix())){
@@ -299,61 +259,29 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 
 						//下载图片并替换路径
 						String imageUrl=imgSvc.crawlImg(imgRealUrl, config.getContextPath(), config.getUploadToDb(), config.getDbFileUri(), ftp, site.getUploadPath());
-						txt=txt.replace(img, imageUrl);
+						html=html.replace(img, imageUrl);
 					}
 				}
 
-				String author = null;
-				if(StringUtils.isNotBlank(authorStart)){
-					start = html.indexOf(authorStart);
-					if (start == -1) {
-						return handerResult(temp, history, null,
-								AcquisitionResultType.AUTHORSTARTNOTFOUND);
-					}
-					start += authorStart.length();
-					end = html.indexOf(authorEnd, start);
-					if (end == -1) {
-						return handerResult(temp, history, null,
-								AcquisitionResultType.AUTHORENDNOTFOUND);
-					}
-					author = html.substring(start, end);
-				}
+				String author = acqu.getAuthorStart();
 
-				String origin = null;
-				if(StringUtils.isNotBlank(originAppoint)){
-					origin=originAppoint;
-				}else{
-					if(StringUtils.isNotBlank(originStart)){
-						start = html.indexOf(originStart);
-						if (start == -1) {
-							return handerResult(temp, history, null,
-									AcquisitionResultType.ORIGINSTARTNOTFOUND);
-						}
-						start += originStart.length();
-						end = html.indexOf(originEnd, start);
-						if (end == -1) {
-							return handerResult(temp, history, null,
-									AcquisitionResultType.ORIGINENDNOTFOUND);
-						}
-						origin = html.substring(start, end);
-					}
-				}
+				String origin = b.getUrl();
 
-				String description = null;
-				if(StringUtils.isNotBlank(descriptionStart)){
-					start = html.indexOf(descriptionStart);
-					if (start == -1) {
-						return handerResult(temp, history, null,
-								AcquisitionResultType.DESCRISTARTNOTFOUND);
-					}
-					start += descriptionStart.length();
-					end = html.indexOf(descriptionEnd, start);
-					if (end == -1) {
-						return handerResult(temp, history, null,
-								AcquisitionResultType.DESCRIENDNOTFOUND);
-					}
-					description = html.substring(start, end);
-				}
+//				String description = null;
+//				if(StringUtils.isNotBlank(descriptionStart)){
+//					start = html.indexOf(descriptionStart);
+//					if (start == -1) {
+//						return handerResult(temp, history, null,
+//								AcquisitionResultType.DESCRISTARTNOTFOUND);
+//					}
+//					start += descriptionStart.length();
+//					end = html.indexOf(descriptionEnd, start);
+//					if (end == -1) {
+//						return handerResult(temp, history, null,
+//								AcquisitionResultType.DESCRIENDNOTFOUND);
+//					}
+//					description = html.substring(start, end);
+//				}
 
 				Date releaseTime = null;
 				if(StringUtils.isNotBlank(releaseTimeStart)){
@@ -391,34 +319,36 @@ public class AcquisitionSvcImpl implements AcquisitionSvc {
 //					HttpGet viewHttpGet = new HttpGet(new URI(viewLink));
 //					html = client.execute(viewHttpGet, handler);
 //				}
-				if(StringUtils.isNotBlank(viewStart)){
-					start = html.indexOf(viewStart);
-					if (start == -1) {
-						return handerResult(temp, history, null,
-								AcquisitionResultType.VIEWSTARTNOTFOUND);
-					}
-					start += viewStart.length();
-					end = html.indexOf(viewEnd, start);
-					if (end == -1) {
-						return handerResult(temp, history, null,
-								AcquisitionResultType.VIEWENDNOTFOUND);
-					}
-					view = html.substring(start, end);
-				}
+//				if(StringUtils.isNotBlank(viewStart)){
+//					start = html.indexOf(viewStart);
+//					if (start == -1) {
+//						return handerResult(temp, history, null,
+//								AcquisitionResultType.VIEWSTARTNOTFOUND);
+//					}
+//					start += viewStart.length();
+//					end = html.indexOf(viewEnd, start);
+//					if (end == -1) {
+//						return handerResult(temp, history, null,
+//								AcquisitionResultType.VIEWENDNOTFOUND);
+//					}
+//					view = html.substring(start, end);
+//				}
+				history.setDescription(acqu.getAuthorStart());
 
-				Content content = cmsAcquisitionMng.saveContent(title, txt,origin,author,description,releaseTime,
+				Content content = cmsAcquisitionMng.saveContent(title, html,origin,author,"",releaseTime,
 						acquId, AcquisitionResultType.SUCCESS, temp, history);
-				if(StringUtils.isNotBlank(view)){
-					ContentCount count=content.getContentCount();
-					int c=Integer.parseInt(view);
-					//采集访问一次需减一
-					if(StringUtils.isNotBlank(viewLink)){
-						c=c-1;
-					}
-					count.setViews(c);
-					contentCountMng.update(count);
-				}
+//				if(StringUtils.isNotBlank(view)){
+//					ContentCount count=content.getContentCount();
+//					int c=Integer.parseInt(view);
+//					//采集访问一次需减一
+//					if(StringUtils.isNotBlank(viewLink)){
+//						c=c-1;
+//					}
+//					count.setViews(c);
+//					contentCountMng.update(count);
+//				}
 				cmsAcquisitionTempMng.save(temp);
+
 				cmsAcquisitionHistoryMng.save(history);
 				return content;
 			} catch (Exception e) {

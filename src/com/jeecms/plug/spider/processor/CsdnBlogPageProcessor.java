@@ -1,6 +1,7 @@
 package com.jeecms.plug.spider.processor;
 
 import com.jeecms.plug.spider.bean.CsdnBlog;
+import org.apache.commons.lang3.StringUtils;
 import us.codecraft.webmagic.Page;
 import us.codecraft.webmagic.Site;
 import us.codecraft.webmagic.Spider;
@@ -23,7 +24,7 @@ import java.util.List;
 public class CsdnBlogPageProcessor implements PageProcessor {
 
 	//	private static String username = "qq598535550";// 设置csdn用户名
-	private static String username = "chen88358323";// 设置csdn用户名
+	private String author ;// 设置csdn用户名
 
 	public static int size = 0;// 共抓取到的文章数量
 
@@ -45,9 +46,20 @@ public class CsdnBlogPageProcessor implements PageProcessor {
 		this.cblist = cblist;
 	}
 
+	public String getAuthor() {
+		return author;
+	}
+
+	public void setAuthor(String author) {
+		this.author = author;
+	}
+
 	@Override
 	// process是定制爬虫逻辑的核心接口，在这里编写抽取逻辑
 	public void process(Page page) {
+		String username=getAuthor();
+		if(StringUtils.isBlank(username))
+			return;
 		// 列表页
 		if (!page.getUrl().regex("http://blog\\.csdn\\.net/" + username + "/article/details/\\d+").match()) {
 			// 添加所有文章页
@@ -132,12 +144,16 @@ public class CsdnBlogPageProcessor implements PageProcessor {
 		return result.toString();
 	}
 
+	public CsdnBlogPageProcessor(String author) {
+		this.author = author;
+	}
+
 	public static void main(String[] args) {
 		long startTime, endTime;
 		System.out.println("【爬虫开始】请耐心等待一大波数据到你碗里来...");
 		startTime = System.currentTimeMillis();
 		// 从用户博客首页开始抓，开启5个线程，启动爬虫
-		Spider.create(new CsdnBlogPageProcessor()).addUrl("http://blog.csdn.net/" + username).thread(5).run();
+		Spider.create(new CsdnBlogPageProcessor("chen88358323")).addUrl("http://blog.csdn.net/" + "chen88358323").thread(5).run();
 		endTime = System.currentTimeMillis();
 		System.out.println("【爬虫结束】共抓取" + size + "篇文章，耗时约" + ((endTime - startTime) / 1000) + "秒，已保存到数据库，请查收！");
 	}
