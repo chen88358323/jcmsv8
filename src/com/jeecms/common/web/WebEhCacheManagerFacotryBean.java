@@ -81,6 +81,7 @@ public class WebEhCacheManagerFacotryBean  implements FactoryBean<CacheManager>,
 					//创建一个对应传入配置文件中名字的单例CacheManager
 					this.cacheManager =	CacheManager.create(config);
 				} catch (ObjectExistsException e) {
+					//todo 增加清理缓存方法
 					log.warn("if you want to config distStore in spring,"
 							+ " please remove diskStore in config file!", e);
 				}
