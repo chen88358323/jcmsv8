@@ -7,6 +7,7 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.codec.binary.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -40,6 +41,11 @@ public class GuestbookAct {
 	public static final String GUESTBOOK_INDEX = "tpl.guestbookIndex";
 	public static final String GUESTBOOK_CTG = "tpl.guestbookCtg";
 	public static final String GUESTBOOK_DETAIL = "tpl.guestbookDetail";
+
+
+	//尖括号转义
+	private static final String jkh_start=new String(Base64.encodeBase64("<".getBytes()));
+	private static final String jkh_end=new String(Base64.encodeBase64(">".getBytes()));
 
 	/**
 	 * 留言板首页或类别页
@@ -125,6 +131,10 @@ public class GuestbookAct {
 			log.warn("", e);
 			return;
 		}
+
+		title=title.replace("<", jkh_start).replace(">",jkh_end);
+		content=content.replace("<", jkh_start).replace(">",jkh_end);
+
 		String ip = RequestUtils.getIpAddr(request);
 		cmsGuestbookMng.save(member, siteId, ctgId, ip, title, content, email,
 				phone, qq);

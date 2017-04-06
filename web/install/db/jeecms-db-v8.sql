@@ -2748,3 +2748,9 @@ CREATE TABLE `jo_user` (
 #
 
 INSERT INTO `jo_user` VALUES (1,'admin','aa@qq.com','5f4dcc3b5aa765d61d8327deb882cf99','2011-01-03 00:00:00','127.0.0.1','2016-10-14 10:16:03','127.0.0.1',1155,NULL,NULL,NULL,0,NULL,1,NULL);
+
+
+#add by cc
+#  删除留言板无用内容
+#
+delete from  jc_guestbook_ext  where guestbook_id in (3,5)
