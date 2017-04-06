@@ -87,7 +87,7 @@ public class WebEhCacheManagerFacotryBean  implements FactoryBean<CacheManager>,
 				}
 			}
 		}
-		if (this.cacheManagerName != null) {
+		if (this.cacheManagerName != null&&cacheManager!=null) {
 			this.cacheManager.setName(this.cacheManagerName);
 		}
 	}
