@@ -3,6 +3,7 @@ package com.jeecms.core.security;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.log4j.Logger;
 import org.apache.shiro.authc.AuthenticationException;
 import org.apache.shiro.authc.AuthenticationInfo;
 import org.apache.shiro.authc.AuthenticationToken;
@@ -13,6 +14,7 @@ import org.apache.shiro.authz.SimpleAuthorizationInfo;
 import org.apache.shiro.realm.AuthorizingRealm;
 import org.apache.shiro.subject.PrincipalCollection;
 import org.apache.shiro.subject.SimplePrincipalCollection;
+import org.apache.shiro.util.ByteSource;
 import org.apache.shiro.util.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -28,7 +30,9 @@ import com.jeecms.core.manager.UnifiedUserMng;
  * 
  */
 public class CmsAuthorizingRealm extends AuthorizingRealm {
+	private static final Logger log = Logger.getLogger(CmsAuthorizingRealm.class);
 
+	public static final String salt="xxoo";
 	/**
 	 * 登录认证
 	 */
@@ -38,7 +42,8 @@ public class CmsAuthorizingRealm extends AuthorizingRealm {
 		CmsUser user = cmsUserMng.findByUsername(token.getUsername());
 		if (user != null) {
 			UnifiedUser unifiedUser = unifiedUserMng.findById(user.getId());
-			return new SimpleAuthenticationInfo(user.getUsername(), unifiedUser.getPassword(), getName());
+//			log.info("unifiedUser.getPassword():"+unifiedUser.getPassword());
+			return new SimpleAuthenticationInfo(user.getUsername(), unifiedUser.getPassword(),  getName());//ByteSource.Util.bytes(salt),
 		} else {
 			return null;
 		}

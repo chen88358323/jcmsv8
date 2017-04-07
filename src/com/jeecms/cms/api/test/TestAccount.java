@@ -9,6 +9,9 @@ import com.jeecms.common.util.AES128Util;
 import com.jeecms.common.util.Num62;
 import com.jeecms.common.util.PayUtil;
 import com.jeecms.common.web.HttpClientUtil;
+import org.apache.shiro.crypto.hash.Md5Hash;
+import org.apache.shiro.crypto.hash.SimpleHash;
+import org.apache.shiro.util.ByteSource;
 
 public class TestAccount {
 
@@ -17,6 +20,16 @@ public class TestAccount {
 		//testDrawApply();
 		//testDrawDel();
 		//testGetAccountInfo();
+
+		testMd5();
+	}
+	private static void testMd5(){
+//		String password_md5 = new SimpleHash("!Q@W#E$R").toString();
+//		System.out.println("md5加密，不加盐="+password_md5);
+
+		//md5加密，加盐，一次散列
+		String password_md5_sale_1 = new SimpleHash("MD5","!Q@W#E$R", null, 1).toString();
+		System.out.println("password_md5_sale_1="+password_md5_sale_1);
 	}
 	
 	private static String testDrawList(){
